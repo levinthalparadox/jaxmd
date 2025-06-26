@@ -42,7 +42,7 @@ class PeriodicSpace(Space):
     3.  If the distance is negative and greater than half the box size, then we need to wrap around the box
     4.  If the distance is negative and less than half the box size, then we can just return the distance
 
-    We can use the floor division to get the wrapped distance. 
+    We can use the round division to get the wrapped distance. 
     If distance is less than half the box size the round will be 0 and we can just return the distance.
     If distance is greater than half the box size, then the positive distance will wrap around and become negative
     and if the distance was initially negative, then it will wrap around and become positive. 
