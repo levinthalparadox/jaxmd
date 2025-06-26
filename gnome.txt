@@ -1,0 +1,39 @@
+https://www.nature.com/articles/s41586-023-06735-9
+1. Use neural network to predict energy
+2. workflow
+    a. start off with existing materials from database
+    b. try to make new structures
+       a. structural pipeline
+          1. create new structure
+            a. bias previous models to encourage novel discoveries
+            b. have some strategy SAPS
+               a. instead of replacing all atoms, can replace some atoms
+                  1. ie A2B2X6->instead of substituting both B's, just substitute one B
+          2. pass through gnn to predict energy
+          3. if energy is low enough, go through dft
+       b. chemical pipeline
+          1. create new formulas
+          2. pass through gnn 
+          3. need to create structure too before feeding through dft
+             a. AIRSS 
+             b. try to create 100 structures
+             c. initialize with some basic symmetry products
+                1. use softsphere energy (see energy.py)
+                2. hard to predict volume(think box size in spaces) 
+    d. most promising go through (dft) but also use active learning to improve gnn
+3. Network Architecture
+    a. see https://web.stanford.edu/class/cs224w/slides/17-geometricDL.pdf
+    b. theory
+        a. invariant only (ie classification is invariant to rotation, translation, etc)
+        b. equivariant(ie segmentation; if you rotate input, expect output to rotate)
+        c. key point of graph neural networks is being permutation invariant
+    c. prior work
+        a. schnet
+           1. invariant 
+           2. uses relative distance (think scalars no direction)
+        b. dimenet
+           1. incorporate angles
+        c. painn 
+           1. also includes equivariant features (think vectors)
+    d.  E(3) 
+        1. kind of like painn but uses even higher dimensional tensors 
