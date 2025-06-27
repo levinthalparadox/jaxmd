@@ -12,8 +12,8 @@ def soft_sphere_potential(
     stiffness_exponent : float
     ): 
     """
-    Pure respulsion. If two molecules overlap, they repel each other; otherwise nothing.  
-    Stifness exponent controls how stiff the repulsion if overlap is. 
+    Pure repulsion. If two molecules overlap, they repel each other; otherwise nothing.  
+    Stiffness exponent controls how stiff the repulsion if overlap is. 
     Think Pauli Exclusion Principle
     """
     is_overlapping = distance_between_centers < particle_diameter
@@ -33,7 +33,7 @@ def lennard_jones_potential(
     If far apart, attractive force dominates; if close, repulsive force dominates.
     Equilibrium distance is the distance at which the attractive and repulsive forces balance out.
     Min potential is the minimum potential energy. Idea is you get closer, attractive forces increase
-    but then at some point you get to close and repulsive forces come in. Can think as dissociation energy.
+    but then at some point you get too close and repulsive forces come in. Can think as dissociation energy.
     Graph here is helpful https://physicsatmcl.commons.msu.edu/lennard-jones-potential/
     """
     scaled_distance = equilibrium_distance / distance_between_centers
@@ -50,7 +50,7 @@ def morse_potential(
     ):
     """
     Better for bonding than lennard jones. More realistic repulsion than 12th power.
-    Potentiall width parameter controls how quickly energy increases as distance changes from minimum potential_distance
+    Potential width parameter controls how quickly energy increases as distance changes from minimum potential_distance
     """
     exponent = -potential_width_parameter * (distance_between_centers - equilibrium_distance)
     potential_energy = min_potential * (1 - jnp.exp(exponent))**2
@@ -67,7 +67,7 @@ def embedded_atom_model_potential(
     EAM is different because can't just treat each pair independently, ie think metals sharing electrons
     Pair potential functional is generally used for repulsive forces, pauli exclusion principle (think soft sphere.
     What we do is we calculate electron density at each atom and then use that to calculate embedding energy.
-    This embedding energy is non-linear, so this is main reason we can't do pairse functions
+    This embedding energy is non-linear, so this is main reason we can't do pairwise functions
     """
     dist_matrix = jnp.linalg.norm(positions[:, None, :] - positions[None, :, :], axis=-1)
     mask = jnp.eye(positions.shape[0], dtype=bool)

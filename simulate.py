@@ -78,7 +78,7 @@ def nvt_step_with_rescaling(
     which is proportional to the average kinetic energy.
     So, naive way is we get difference between target temperature and current temperature
     and scale the kinetic energy and thus velocities. 
-    This is problem/unnatural becuase
+    This is unnatural.
     """
     new_positions, new_velocities = velocity_verlet_step(
         positions, old_velocities, mass, energy_fn, step_size
@@ -109,7 +109,7 @@ def nose_hoover_single(
     It uses a friction parameter to control how fast the thermostat heats up and cools down.
     This can cause problems with the the thermostat becoming too in lock step with the system,
     and so not all the space is properly explored, so sometimes chaining is applied where 
-    the thermostata gets its own thermostat.
+    the thermostat gets its own thermostat.
     """
     dof = velocities.size
     half = 0.5 * time_step
