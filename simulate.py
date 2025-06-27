@@ -53,9 +53,9 @@ def velocity_verlet_step(positions : jnp.ndarray, old_velocities : jnp.ndarray, 
     new_velocities = velocities_half + 0.5 * (new_forces / mass) * step_size
     return new_positions, new_velocities
 
-def nvt_step(positions : jnp.ndarray, old_velocities : jnp.ndarray, mass : float, energy_fn, step_size : float) -> Tuple[jnp.ndarray, jnp.ndarray]:
+def nve_step(positions : jnp.ndarray, old_velocities : jnp.ndarray, mass : float, energy_fn, step_size : float) -> Tuple[jnp.ndarray, jnp.ndarray]:
     """
-    NVT means number of particles is constant, temperature is constant and volume is constant. Space and
+    NVE means number of particles is constant, energy is constant and volume is constant. Space and
     number of particles in our non-free space and see above for velocity verlet being energy conserving.
     """
     new_positions, new_velocities = velocity_verlet_step(positions, old_velocities, mass, energy_fn, step_size)
