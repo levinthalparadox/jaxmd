@@ -4,7 +4,8 @@ Ignoring space to make it cleaner but would use space to get distances and also 
 """
 
 import jax 
-def euler_step(positions : jnp.ndarray, energy_fn, step_size : float) -> jnp.ndarray:
+from typing import Tuple
+def euler_step(positions : jnp.ndarray, old_velocities : jnp.ndarray, mass : float, energy_fn, step_size : float) -> Tuple[jnp.ndarray, jnp.ndarray]:
     """
     Euler step is not that accurate. Ie see Taylor series expansion of energy function.
     Furthermore, it assumes that the force is constant over the time step.
@@ -16,19 +17,25 @@ def euler_step(positions : jnp.ndarray, energy_fn, step_size : float) -> jnp.nda
     """
     force_fn = lambda x: -jax.grad(energy_fn)(x)
     forces = force_fn(positions)
-    new_positions = positions + step_size * forces
-    return new_positions
+    new_velocities = old_velocities + step_size * forces / mass
+    new_positions = positions + step_size * new_velocities
+    return new_positions, new_velocities
 
-def runge_kutta_step(positions : jnp.ndarray, energy_fn, step_size : float) -> jnp.ndarray:
+def runge_kutta_step(positions : jnp.ndarray, old_velocities : jnp.ndarray, mass : float, energy_fn, step_size : float) -> Tuple[jnp.ndarray, jnp.ndarray]:
     """
     Runge-Kutta step doesn't assume that the force is constant over the time step
     and averages stuff so it works well with the Taylor series. It does well to minimize 
     the local error but it is also not energy conserving. 
     """
     force_fn = lambda x: -jax.grad(energy_fn)(x)
-    k1 = force_fn(positions)
-    k2 = force_fn(positions + step_size * k1 / 2)
-    k3 = force_fn(positions + step_size * k2 / 2)
-    k4 = force_fn(positions + step_size * k3)
-    new_positions = positions + step_size * (k1 + 2 * k2 + 2 * k3 + k4) / 6
-    return new_positions
+    k1_forces = force_fn(positions)
+    k1_velocities = old_velocities + step_size * k1_forces / mass
+    k2_forces = force_fn(positions + step_size * k1_velocities / 2)
+    k2_velocities = old_velocities + step_size * k2_forces / mass
+    k3_forces = force_fn(positions + step_size * k2_velocities / 2)
+    k3_velocities = old_velocities + step_size * k3_forces / mass
+    k4_forces = force_fn(positions + step_size * k3_velocities)
+    k4_velocities = old_velocities + step_size * k4_forces / mass
+    new_positions = positions + step_size * (k1_velocities + 2 * k2_velocities + 2 * k3_velocities + k4_velocities) / 6
+    new_velocities = old_velocities + step_size * (k1_forces + 2 * k2_forces + 2 * k3_forces + k4_forces) / 6
+    return new_positions, new_velocities
