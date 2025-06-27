@@ -1,4 +1,5 @@
 import jax.numpy as jnp
+from jax import vmap
 
 """
 Energy functions provide a way to calculate the energy of a system given the positions of the particles.
@@ -54,3 +55,27 @@ def morse_potential(
     exponent = -potential_width_parameter * (distance_between_centers - equilibrium_distance)
     potential_energy = min_potential * (1 - jnp.exp(exponent))**2
     return potential_energy
+
+
+def embedded_atom_model_potential(
+    positions: jnp.ndarray,
+    pair_potential_func,
+    electron_density_func,
+    embedding_func
+    ):
+    """
+    EAM is different because can't just treat each pair independently, ie think metals sharing electrons
+    Pair potential functional is generally used for repulsive forces, pauli exclusion principle (think soft sphere.
+    What we do is we calculate electron density at each atom and then use that to calculate embedding energy.
+    This embedding energy is non-linear, so this is main reason we can't do pairse functions
+    """
+    dist_matrix = jnp.linalg.norm(positions[:, None, :] - positions[None, :, :], axis=-1)
+    mask = jnp.eye(positions.shape[0], dtype=bool)
+    pair_potentials = jnp.where(mask, 0.0, pair_potential_func(dist_matrix))
+    total_pair_energy = jnp.sum(pair_potentials) / 2.0
+    electron_densities = jnp.where(mask, 0.0, electron_density_func(dist_matrix))
+    host_electron_density_per_atom = jnp.sum(electron_densities, axis=1)
+    embedding_energy_per_atom = vmap(embedding_func)(host_electron_density_per_atom)
+    total_embedding_energy = jnp.sum(embedding_energy_per_atom)
+    total_energy = total_pair_energy + total_embedding_energy
+    return total_energy
