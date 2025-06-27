@@ -21,7 +21,7 @@ def get_neighbors_pairwise(positions : jnp.ndarray, cutoff : float) -> jnp.ndarr
 
 def find_neighboring_cells(cell_index : jnp.ndarray, num_cells_in_dimension : int) -> jnp.ndarray:
     """Find all neighboring cells for a given cell index.
-    We are assumming a wrap around to support periodic shapes but 
+    We are assuming a wrap around to support periodic shapes but 
     we can remove the wrap around and just clip if we want to support 
     non-periodic shapes.
     """
@@ -67,6 +67,4 @@ def get_neighbors_cell_list(positions : jnp.ndarray, cutoff : float, box_size : 
         neighbors_index = find_neighboring_cells(cell_index, num_cells_in_dimension)
         points_in_cell = cell_indices[neighbors_index]
         for point_index in points_in_cell:
-            fsdfasdf
-
     

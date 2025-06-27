@@ -3,7 +3,7 @@ from jax import vmap
 
 """
 Energy functions provide a way to calculate the energy of a system given the positions of the particles.
-In actual implemention, would try to compute this in parallel and use neighborlists. 
+In actual implementation, would try to compute this in parallel and use neighborlists. 
 """
 def soft_sphere_potential(
     distance_between_centers : jnp.ndarray,

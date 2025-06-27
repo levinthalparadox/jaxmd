@@ -45,7 +45,7 @@ def runge_kutta_step(positions : jnp.ndarray, old_velocities : jnp.ndarray, mass
 
 def velocity_verlet_step(positions : jnp.ndarray, old_velocities : jnp.ndarray, mass : float, energy_fn, step_size : float) -> Tuple[jnp.ndarray, jnp.ndarray]:
     """
-    Velocity Verlet step is conserving, Intutition, is position is updated with half velocity 
+    Velocity Verlet step is conserving, Intution, is position is updated with half velocity 
     so same as in forward vs backward so is generally energy conserving. 
     """
     force_fn = lambda x: -jax.grad(energy_fn)(x)
