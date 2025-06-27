@@ -41,8 +41,14 @@ class PreviousCellList:
     previous_positions : jnp.ndarray | None
     existing_neighbors : jnp.ndarray | None
 
-
-def overall 
+"""
+WORK IN PROGRESS
+Basic logic is you segmented the space into a grid with cell with cutoff_length.
+You know that stuff within cutoff has to be one of our neighboring cells so just compare 
+with those. Additionally, to speed up more, check how much particles have moved since last time.
+Make the cells a little bigger than cutoff and if the particles have moved less than the skin thickness, 
+since the particles have moved less than the half of the skin thickness, we can just use the previous neighbors.
+"""
     
 def get_neighbors_cell_list(positions : jnp.ndarray, cutoff : float, box_size : jnp.ndarray, skin_thickness : float, previous_cell_list : PreviousCellList | None = None) -> PreviousCellList:
 
@@ -53,7 +59,7 @@ def get_neighbors_cell_list(positions : jnp.ndarray, cutoff : float, box_size : 
         diff_in_positions = positions - previous_cell_list.previous_positions
         positions_distance = jnp.sqrt(jnp.sum(diff_in_positions**2))
         max_distance = jnp.max(positions_distance)
-        if max_distance < skin_thickness * 2:
+        if max_distance < skin_thickness * 0.5:
             return previous_cell_list            
         
     cell_list = build_cell_list(cell_indices, num_cells_in_dimension)
