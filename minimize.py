@@ -23,7 +23,9 @@ def gradient_descent(positions, energy_fn, max_steps=1000, step_size=0.01, force
 def fire_minimize(positions, energy_fn, max_steps=1000, dt_max=0.1, dt_min=0.02, force_tolerance=1e-6):
     """Fire tries to let you learn faster without the oscillations of gradient descent.
 
-    Fire is a variant of gradient descent that tries to let you learn faster without the oscillations of gradient descent.
+    Couple key ideas
+    1. Has a concept of momentum to reward you for going in the right direction
+    2. If you overstep, velocity get reset and also timestep gets smaller
     """
     force_fn = grad(energy_fn)
     alpha = 0.1
@@ -38,12 +40,10 @@ def fire_minimize(positions, energy_fn, max_steps=1000, dt_max=0.1, dt_min=0.02,
         positions = positions + dt * velocity
         power = jnp.sum(forces * velocity)
         if power > 0:
-            # Mix velocity with force direction
             velocity = (1 - alpha) * velocity + alpha * forces * jnp.linalg.norm(velocity) / jnp.linalg.norm(forces)
             dt = min(dt * 1.1, dt_max)
             alpha *= 0.99
         else:
-            # Reset velocity, reduce timestep
             velocity = jnp.zeros_like(velocity)
             dt = max(dt * 0.5, dt_min)
             alpha = 0.1
