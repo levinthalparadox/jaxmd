@@ -4,7 +4,9 @@ Ignoring space to make it cleaner but would use space to get distances and also 
 """
 
 import jax 
+import jax.numpy as jnp
 from typing import Tuple
+
 def euler_step(positions : jnp.ndarray, old_velocities : jnp.ndarray, mass : float, energy_fn, step_size : float) -> Tuple[jnp.ndarray, jnp.ndarray]:
     """
     Euler step is not that accurate. Ie see Taylor series expansion of energy function.
@@ -60,4 +62,101 @@ def nve_step(positions : jnp.ndarray, old_velocities : jnp.ndarray, mass : float
     """
     new_positions, new_velocities = velocity_verlet_step(positions, old_velocities, mass, energy_fn, step_size)
     return new_positions, new_velocities
-    
+
+def nvt_step_with_rescaling(
+    positions: jnp.ndarray,
+    old_velocities: jnp.ndarray,
+    mass: float,
+    energy_fn,
+    step_size: float,
+    target_temperature: float,
+    k_b: float = 1.0,
+) -> Tuple[jnp.ndarray, jnp.ndarray]:
+    """
+    NVT means we are trying to maintain a constant temperature,
+    which is proportional to the average kinetic energy.
+    So, naive way is we get difference between target temperature and current temperature
+    and scale the kinetic energy and thus velocities. 
+    This is problem/unnatural becuase
+    """
+    new_positions, new_velocities = velocity_verlet_step(
+        positions, old_velocities, mass, energy_fn, step_size
+    )
+    kinetic_energy = 0.5 * mass * jnp.sum(new_velocities ** 2)
+    dof = new_velocities.size
+    current_temperature = 2.0 * kinetic_energy / (dof * k_b)
+    scale = jnp.sqrt(target_temperature / current_temperature)
+    new_velocities = new_velocities * scale
+    return new_positions, new_velocities
+
+
+def nose_hoover_single(
+    positions: jnp.ndarray,
+    velocities: jnp.ndarray,
+    friction_parameter: float,
+    mass: float,
+    energy_fn,
+    time_step: float,
+    target_T: float,
+    Q: float,
+    k_b: float = 1.0,
+) -> Tuple[jnp.ndarray, jnp.ndarray, float]:
+    """
+    Idea is that instead of arbitrary scaling, we have a thermostat.
+    The idea is that the the thermostat heats up andd cool down accordingly
+    to make sure the total energy is constant if you include the thermostat.
+    It uses a friction parameter to control how fast the thermostat heats up and cools down.
+    This can cause problems with the the thermostat becoming too in lock step with the system,
+    and so not all the space is properly explored, so sometimes chaining is applied where 
+    the thermostata gets its own thermostat.
+    """
+    dof = velocities.size
+    half = 0.5 * time_step
+    force = lambda x: -jax.grad(energy_fn)(x)
+    current_kinetic_energy = 0.5 * mass * jnp.sum(velocities * velocities)
+    temperature_error = 2.0 * current_kinetic_energy - dof * k_b * target_T
+    friction_parameter = friction_parameter + half * temperature_error / Q
+    velocities = velocities * jnp.exp(-friction_parameter * half)
+    velocities = velocities + half * force(positions) / mass
+    positions = positions + time_step * velocities
+    velocities = velocities + half * force(positions) / mass
+    velocities = velocities * jnp.exp(-friction_parameter * half)
+    current_kinetic_energy = 0.5 * mass * jnp.sum(velocities * velocities)
+    temperature_error = 2.0 * current_kinetic_energy - dof * k_b * target_T
+    friction_parameter = friction_parameter + half * temperature_error / Q
+    return positions, velocities, friction_parameter
+
+def nvt_langevian_step(
+    positions: jnp.ndarray,
+    velocities: jnp.ndarray,
+    mass: float,
+    energy_fn,
+    time_step: float,
+    friction_constant: float,
+    target_temperature: float,
+    key: jax.random.PRNGKey,
+    k_b: float = 1.0,
+) -> Tuple[jnp.ndarray, jnp.ndarray, jax.random.PRNGKey]:
+    """
+    Instead of using a thermostat, we use the fluctuation dissipation theorem.
+    We have some friction but this constant is preset. Additionally, we add some random
+    energy to the system to maintain the target temperature.
+
+    Key idea is that the friction is self-regulating. If the system is too hot, the friction will be high
+    and if the system is too cold, the friction will be low. However, the friction removes energy
+    from the system so we must add some random energy.
+    """
+    force_fn = lambda x: -jax.grad(energy_fn)(x)
+    half_dt = 0.5 * time_step
+    exp_gamma = jnp.exp(-friction_constant * half_dt)
+    noise_scale = jnp.sqrt((1.0 - exp_gamma**2) * k_b * target_temperature / mass)
+    key, subkey1, subkey2 = jax.random.split(key, 3)
+    forces = force_fn(positions)
+    velocities = velocities + (half_dt / mass) * forces
+    velocities = exp_gamma * velocities + noise_scale * jax.random.normal(subkey1, velocities.shape)
+    positions = positions + half_dt * velocities
+    forces_new = force_fn(positions)
+    velocities = velocities + (half_dt / mass) * forces_new
+    velocities = exp_gamma * velocities + noise_scale * jax.random.normal(subkey2, velocities.shape)
+    positions = positions + half_dt * velocities
+    return positions, velocities, key
