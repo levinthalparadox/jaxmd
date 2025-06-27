@@ -5,26 +5,25 @@ Energy functions provide a way to calculate the energy of a system given the pos
 In actual implemention, would try to compute this in parallel and use neighborlists. 
 """
 def soft_sphere_potential(
-    distance_between_centers,
-    repulsion_energy_scale,
-    particle_diameter,
-    stiffness_exponent
+    distance_between_centers : jnp.ndarray,
+    repulsion_energy_scale : float,
+    particle_diameter : float,
+    stiffness_exponent : float
     ): 
     """
-    Pure respulsion. If two molecules overlap, they repel each other; otherwise nothing. 
+    Pure respulsion. If two molecules overlap, they repel each other; otherwise nothing.  
     Stifness exponent controls how stiff the repulsion if overlap is. 
     Think Pauli Exclusion Principle
     """
-    distance = jnp.asarray(distance_between_centers)
-    is_overlapping = distance < particle_diameter
-    overlap_fraction = 1 - distance / particle_diameter
+    is_overlapping = distance_between_centers < particle_diameter
+    overlap_fraction = 1 - distance_between_centers / particle_diameter
     potential_energy = repulsion_energy_scale * (overlap_fraction ** stiffness_exponent)
     return jnp.where(is_overlapping, potential_energy, 0.0)
 
 def lennard_jones_potential(
-    distance_between_centers,
-    min_potential,
-    equilibrium_distance
+    distance_between_centers : jnp.ndarray,
+    min_potential : float,
+    equilibrium_distance : float
     ):
     """
     Add an attractive force to the soft sphere ie simulate something like vanderwaals forces.
@@ -32,12 +31,26 @@ def lennard_jones_potential(
     will induce dipole in other atom, and then can have attractive force between them)
     If far apart, attractive force dominates; if close, repulsive force dominates.
     Equilibrium distance is the distance at which the attractive and repulsive forces balance out.
-
+    Min potential is the minimum potential energy. Idea is you get closer, attractive forces increase
+    but then at some point you get to close and repulsive forces come in. Can think as dissociation energy.
     Graph here is helpful https://physicsatmcl.commons.msu.edu/lennard-jones-potential/
     """
-    distance = jnp.asarray(distance_between_centers)
-    scaled_distance = equilibrium_distance / distance
+    scaled_distance = equilibrium_distance / distance_between_centers
     repulsive_term = scaled_distance ** 12
     attractive_term = scaled_distance ** 6
     potential_energy = 4 * min_potential * (repulsive_term - attractive_term)
+    return potential_energy
+
+def morse_potential(
+    distance_between_centers : jnp.ndarray,
+    min_potential : float,
+    equilibrium_distance : float,
+    potential_width_parameter : float
+    ):
+    """
+    Better for bonding than lennard jones. More realistic repulsion than 12th power.
+    Potentiall width parameter controls how quickly energy increases as distance changes from minimum potential_distance
+    """
+    exponent = -potential_width_parameter * (distance_between_centers - equilibrium_distance)
+    potential_energy = min_potential * (1 - jnp.exp(exponent))**2
     return potential_energy
