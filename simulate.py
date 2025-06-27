@@ -1,6 +1,7 @@
 """
 Given the energy function, how do we update the positions of the particles.
 Ignoring space to make it cleaner but would use space to get distances and also update positions.
+Ignoring initialization.
 """
 
 import jax 
